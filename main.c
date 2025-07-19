@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <stdbool.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -14,6 +17,36 @@
 
 __declspec(dllimport) void __stdcall Sleep(unsigned long ms);
 
+typedef struct
+{
+    int width, height, channels;
+    unsigned char *data;
+} Image;
+
+Image *load_image(const char *filename){
+    Image *img = malloc(sizeof(Image));
+    if (!img) return NULL;
+    img->data = stbi_load(filename, &img->width, &img->height, &img->channels, 0);
+    if (!img->data){
+        free(img);
+        return NULL;
+    }
+    printf("the width of the image is %d and its height is %d ", img->width, img->height);
+    return img;
+}
+bool search_file(const char* url){
+    WIN32_FIND_DATA fd;
+    HANDLE hfind = FindFirstFile(url, &fd);
+    if (hfind != INVALID_HANDLE_VALUE){
+        printf("file found :) \n");
+        return 1;
+    }
+    else{
+        printf("an error found, try checking the right path of the file! \n");
+        return 0;
+    }
+    FindClose(hfind);
+}
 int main(){
     printf("welcome to RLE de/compressor, choose the following commands \n[1] Compressing \n[2] Decompressing \n> ");
     char input[24];
@@ -32,24 +65,18 @@ int main(){
             compressor_RLE(Text_compressor);
         }
         else if (strcmp(text, "2") == 0 || strcmp(text, "Image") == 0){
+            printf("now, please Enter the name of the file: ");
             char link[512];
             fgets(link, sizeof(link), stdin);
-            link[strcspn(link, "\n")] == '\0';
-            typedef struct
-            {
-                int width, height, channels;
-                unsigned char *data;
-            } Image;
-            Image *load_image(const char *filename){
-                Image *img = malloc(sizeof(Image));
-                if (!img) return NULL;
-                img->data = stbi_load(filename, &img->width, &img->height, &img->channels, 0);
-                if (!img->data){
-                    free(img);
-                    return NULL;
-                }
-                return img;
+            link[strcspn(link, "\n")] = '\0';
+            printf("%s", link);
+            if (search_file(link)){
+                load_image(link);
             }
+            else{
+                return 0;
+            }
+        }
         else {
             printf("%sError: Invalid command, please reset%s\n", FAIL_COLOR, DEFAULT);
         }
